@@ -1,0 +1,105 @@
+// ignore_for_file: prefer_const_declarations
+
+import 'package:sqflite/sqflite.dart';
+
+class DatabaseHelper {
+  static final _databaseName = "beauty_store.db";
+  static final _databaseVersion = 1;
+
+  DatabaseHelper._privateConstructor();
+  static final DatabaseHelper instance = DatabaseHelper._privateConstructor();
+
+  static Database? _database;
+
+  Future<Database> get database async {
+    if (_database != null) return _database!;
+    _database = await _initDatabase();
+    return _database!;
+  }
+
+  _initDatabase() async {
+    String path = await getDatabasesPath() + _databaseName;
+    return await openDatabase(path,
+        version: _databaseVersion, onCreate: _onCreate);
+  }
+
+  Future _onCreate(Database db, int version) async {
+    await db.execute('''
+      CREATE TABLE products (
+        id INTEGER PRIMARY KEY,
+        name TEXT NOT NULL,
+        sku TEXT NOT NULL,
+        quantity INTEGER NOT NULL,
+        price REAL NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE categories (
+        id INTEGER PRIMARY KEY,
+        name TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE users (
+      id INTEGER PRIMARY KEY,
+      username TEXT NOT NULL,
+      email TEXT NOT NULL,
+      phone TEXT NOT NULL,
+      password TEXT NOT NULL
+    )
+    ''');
+  }
+
+  // CRUD operations for products, categories, users...
+
+  Future<List<Map<String, dynamic>>> queryAllProducts() async {
+    Database db = await instance.database;
+    return await db.query('products');
+  }
+
+  Future<List<Map<String, dynamic>>> queryAllCategories() async {
+    Database db = await instance.database;
+    return await db.query('categories');
+  }
+
+  Future<List<Map<String, dynamic>>> queryAllUsers() async {
+    Database db = await instance.database;
+    return await db.query('users');
+  }
+
+  Future<List<Map<String, dynamic>>> queryLowInventoryProducts() async {
+    Database db = await instance.database;
+    return await db.query('products', where: 'quantity < ?', whereArgs: [10]);
+  }
+
+  // database_helper.dart
+
+  Future<int> insertUser(Map<String, dynamic> row) async {
+    Database db = await instance.database;
+    return await db.insert('users', row);
+  }
+
+  Future<Map<String, dynamic>?> queryUserByEmail(String email) async {
+    Database db = await instance.database;
+    List<Map<String, dynamic>> result =
+        await db.query('users', where: 'email = ?', whereArgs: [email]);
+
+    return result.isNotEmpty ? result.first : null;
+  }
+
+  Future<int> insertProduct(Map<String, dynamic> product) async {
+    Database db = await instance.database;
+    return await db.insert('products', product);
+  }
+
+  Future<int> updateProduct(Map<String, dynamic> product) async {
+    Database db = await instance.database;
+    return await db.update('products', product,
+        where: 'id = ?', whereArgs: [product['id']]);
+  }
+
+  Future<int> deleteProduct(int id) async {
+    Database db = await instance.database;
+    return await db.delete('products', where: 'id = ?', whereArgs: [id]);
+  }
+}

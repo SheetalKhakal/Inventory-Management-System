@@ -1,0 +1,1 @@
+ F:\\Flutter\ Projects\\inventory_management_system\\.dart_tool\\flutter_build\\68d8bd66bf69bba6f3a6e651c004595c\\native_assets.yaml: 
