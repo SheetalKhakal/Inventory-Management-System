@@ -79,10 +79,6 @@ class DatabaseHelper {
       return -1; // Return -1 if there's an error
     }
   }
-  // Future<int> insertCategory(Map<String, dynamic> category) async {
-  //   Database db = await instance.database;
-  //   return await db.insert('categories', category);
-  // }
 
   // Update an existing category
   Future<int> updateCategory(Map<String, dynamic> category) async {
