@@ -45,6 +45,9 @@ dependencies:
   flutter_native_splash: ^2.4.1
   shared_preferences: ^2.0.13
   fluttertoast: ^8.2.8
+  image_picker: ^1.1.2
+  image_cropper: ^8.0.2
+  permission_handler: ^11.3.1
 
 flutter_native_splash:
   image: assets/inventory_splash.jpg

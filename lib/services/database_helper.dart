@@ -1,26 +1,26 @@
-// ignore_for_file: prefer_const_declarations
-
+import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
 class DatabaseHelper {
   static final _databaseName = "beauty_store.db";
   static final _databaseVersion = 1;
 
-  DatabaseHelper._privateConstructor();
-  static final DatabaseHelper instance = DatabaseHelper._privateConstructor();
-
+  static final DatabaseHelper instance = DatabaseHelper._init();
   static Database? _database;
+
+  DatabaseHelper._init();
 
   Future<Database> get database async {
     if (_database != null) return _database!;
-    _database = await _initDatabase();
+    _database = await _initDB('inventory.db');
     return _database!;
   }
 
-  _initDatabase() async {
-    String path = await getDatabasesPath() + _databaseName;
-    return await openDatabase(path,
-        version: _databaseVersion, onCreate: _onCreate);
+  Future<Database> _initDB(String filePath) async {
+    final dbPath = await getDatabasesPath();
+    final path = join(dbPath, filePath);
+
+    return await openDatabase(path, version: 1, onCreate: _onCreate);
   }
 
   Future _onCreate(Database db, int version) async {
@@ -29,28 +29,96 @@ class DatabaseHelper {
         id INTEGER PRIMARY KEY,
         name TEXT NOT NULL,
         sku TEXT NOT NULL,
+        category TEXT NOT NULL,
         quantity INTEGER NOT NULL,
+        primary_image TEXT,
+        description TEXT NOT NULL,
         price REAL NOT NULL
       )
     ''');
+
     await db.execute('''
       CREATE TABLE categories (
-        id INTEGER PRIMARY KEY,
-        name TEXT NOT NULL
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        description TEXT NOT NULL,
+        image TEXT
       )
     ''');
+
     await db.execute('''
       CREATE TABLE users (
-      id INTEGER PRIMARY KEY,
-      username TEXT NOT NULL,
-      email TEXT NOT NULL,
-      phone TEXT NOT NULL,
-      password TEXT NOT NULL
-    )
+        id INTEGER PRIMARY KEY,
+        username TEXT NOT NULL,
+        email TEXT NOT NULL,
+        phone TEXT NOT NULL,
+        password TEXT NOT NULL
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE actions_history (
+        id INTEGER PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        action TEXT NOT NULL,
+        timestamp TEXT NOT NULL
+      )
     ''');
   }
 
-  // CRUD operations for products, categories, users...
+  // Insert a new category
+
+  Future<int> insertCategory(Map<String, dynamic> category) async {
+    final db = await instance.database;
+    return await db.insert('categories', category);
+  }
+
+  // Update an existing category
+  Future<int> updateCategory(Map<String, dynamic> category, int id) async {
+    final db = await instance.database;
+    return await db.update(
+      'categories',
+      category,
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  // Delete a category
+  Future<int> deleteCategory(int id) async {
+    final db = await instance.database;
+    return await db.delete(
+      'categories',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+// Fetch all categories
+  Future<List<Map<String, dynamic>>> fetchCategories() async {
+    final db = await instance.database;
+    return await db.query('categories');
+  }
+
+  Future<int> insertProduct(Map<String, dynamic> product) async {
+    Database db = await instance.database;
+    return await db.insert('products', product);
+  }
+
+  Future<void> logUserAction(int userId, String action) async {
+    Database db = await instance.database;
+    await db.insert('actions_history', {
+      'user_id': userId,
+      'action': action,
+      'timestamp': DateTime.now().toIso8601String(),
+    });
+  }
+
+  Future<List<Map<String, dynamic>>> queryUserActions(int userId) async {
+    Database db = await instance.database;
+    return await db
+        .query('actions_history', where: 'user_id = ?', whereArgs: [userId]);
+  }
 
   Future<List<Map<String, dynamic>>> queryAllProducts() async {
     Database db = await instance.database;
@@ -85,11 +153,6 @@ class DatabaseHelper {
         await db.query('users', where: 'email = ?', whereArgs: [email]);
 
     return result.isNotEmpty ? result.first : null;
-  }
-
-  Future<int> insertProduct(Map<String, dynamic> product) async {
-    Database db = await instance.database;
-    return await db.insert('products', product);
   }
 
   Future<int> updateProduct(Map<String, dynamic> product) async {

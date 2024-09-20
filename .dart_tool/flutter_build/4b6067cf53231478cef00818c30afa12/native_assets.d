@@ -1,0 +1,1 @@
+ /Users/antmav/Documents/Sheetal_FlutterPro/Inventory-Management-System/.dart_tool/flutter_build/4b6067cf53231478cef00818c30afa12/native_assets.yaml: 
