@@ -39,11 +39,10 @@ class DatabaseHelper {
 
     await db.execute('''
       CREATE TABLE categories (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        description TEXT NOT NULL,
-        image TEXT
-      )
+      id INTEGER PRIMARY KEY,
+      name TEXT NOT NULL,
+      description TEXT NOT NULL
+    )
     ''');
 
     await db.execute('''
@@ -66,27 +65,39 @@ class DatabaseHelper {
     ''');
   }
 
-  // Insert a new category
-
+  // Insert a new categoryFuture<int> insertCategory(Map<String, dynamic> category) async {
   Future<int> insertCategory(Map<String, dynamic> category) async {
-    final db = await instance.database;
-    return await db.insert('categories', category);
+    try {
+      Database db = await instance.database;
+
+      // Log the category data for debugging
+      print('Inserting category: $category');
+
+      return await db.insert('categories', category);
+    } catch (e) {
+      print('Error inserting category: $e');
+      return -1; // Return -1 if there's an error
+    }
   }
+  // Future<int> insertCategory(Map<String, dynamic> category) async {
+  //   Database db = await instance.database;
+  //   return await db.insert('categories', category);
+  // }
 
   // Update an existing category
-  Future<int> updateCategory(Map<String, dynamic> category, int id) async {
-    final db = await instance.database;
+  Future<int> updateCategory(Map<String, dynamic> category) async {
+    Database db = await instance.database;
     return await db.update(
       'categories',
       category,
       where: 'id = ?',
-      whereArgs: [id],
+      whereArgs: [category['id']],
     );
   }
 
   // Delete a category
   Future<int> deleteCategory(int id) async {
-    final db = await instance.database;
+    Database db = await instance.database;
     return await db.delete(
       'categories',
       where: 'id = ?',
@@ -96,7 +107,7 @@ class DatabaseHelper {
 
 // Fetch all categories
   Future<List<Map<String, dynamic>>> fetchCategories() async {
-    final db = await instance.database;
+    Database db = await instance.database;
     return await db.query('categories');
   }
 

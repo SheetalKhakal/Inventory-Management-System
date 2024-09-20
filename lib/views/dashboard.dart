@@ -1,13 +1,12 @@
 // ignore_for_file: prefer_const_constructors, library_private_types_in_public_api, use_key_in_widget_constructors
 
 import 'dart:io';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:inventory_management_system/services/database_helper.dart';
-import 'package:inventory_management_system/views/add_update_category.dart';
+import 'package:inventory_management_system/views/category_screen.dart';
 import 'package:inventory_management_system/widgets/custom_appbar.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -22,6 +21,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int _lowInventoryCount = 0;
 
   final DatabaseHelper _dbHelper = DatabaseHelper.instance;
+  File? _primaryImageFile;
 
   @override
   void initState() {
@@ -51,17 +51,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
   }
 
-  File? _primaryImageFile;
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
-  File? image;
-  Future _pickImage() async {
-    try {
-      final image = await ImagePicker().pickImage(source: ImageSource.gallery);
-      if (image == null) return;
-      final imageTemp = File(image.path);
-      setState(() => this.image = imageTemp);
-    } on PlatformException catch (e) {
-      print('Failed to pick image: $e');
+    if (pickedFile != null) {
+      // Save the image
+      final directory = await getApplicationDocumentsDirectory();
+      final imagePath = '${directory.path}/${pickedFile.name}';
+      final imageFile = File(imagePath);
+      await imageFile.writeAsBytes(await File(pickedFile.path).readAsBytes());
+
+      setState(() {
+        _primaryImageFile = imageFile; // Set the state with the new image
+      });
     }
   }
 
@@ -244,14 +247,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             ElevatedButton(
               onPressed: () {
-                Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          AddOrUpdateCategory(dbHelper: _dbHelper),
-                    ));
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (context) => CategoryScreen()));
               },
-              child: Text('Add Category'),
+              child: Text('Category'),
             ),
             Expanded(
               child: FutureBuilder<List<Map<String, dynamic>>>(
@@ -270,9 +269,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     itemBuilder: (context, index) {
                       final product = snapshot.data![index];
                       return ListTile(
+                        contentPadding: EdgeInsets.all(8.0),
+                        leading: product['primary_image'] != null
+                            ? Image.file(
+                                File(product['primary_image']),
+                                width: 50,
+                                height: 50,
+                                fit: BoxFit.cover,
+                              )
+                            : Container(
+                                width: 50,
+                                height: 50,
+                                color: Colors.grey[300],
+                                child: Icon(Icons.image, size: 30),
+                              ),
                         title: Text(product['name']),
-                        subtitle: Text(
-                            'Quantity: ${product['quantity']} - Price: \$${product['price']}'),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Quantity: ${product['quantity']}'),
+                            Text('Price: \$${product['price']}'),
+                            Text('Description: ${product['description']}'),
+                          ],
+                        ),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
